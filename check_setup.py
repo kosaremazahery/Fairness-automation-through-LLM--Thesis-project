@@ -33,7 +33,8 @@ print(f"Folder: {os.getcwd()}\n")
 
 # 1. Right folder, all files present
 files = ["run_sweep.py", "activity1.py", "scoring.py", "rescore.py", "llm_fairness.py", "probe_prompt.py",
-         "proxy.py", CSV, os.path.join("gold", "compas.json")]
+         "proxy.py", CSV, os.path.join("gold", "compas.json"),
+         os.path.join("gold", "compas_proxies_literature.json")]
 missing = [f for f in files if not os.path.exists(f)]
 check("All project files are in this folder", not missing,
       f"missing: {missing}. cd into llm-fairness-compas, or move these files here.")

@@ -18,8 +18,11 @@ Thumbs.db
 # Docker
 *.tar
 
-# Experiment logs (generated)
+# Experiment logs (generated).
+# mlartifacts/ holds each run's llm_calls.json, i.e. the full prompts, which contain real names
+# from the data: it must never be published. Back these folders up privately (see README).
 mlruns/
+mlartifacts/
 mlflow.db
 
 # Raw data: personal records, download from ProPublica
@@ -27,3 +30,6 @@ compas-scores-two-years*.csv
 probes/
 prompts/
 
+# Secrets (e.g. an OpenRouter key) and downloaded bundles
+*.key
+*.zip

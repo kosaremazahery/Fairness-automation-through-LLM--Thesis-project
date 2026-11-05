@@ -55,6 +55,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 CSV = "compas-scores-two-years_v1.csv"
 GOLD = os.path.join("gold", "compas.json")
 OUT = os.path.join("gold", "compas_proxies.json")
+LIT = os.path.join("gold", "compas_proxies_literature.json")      # literature-based key (hand-built, sourced)
 VERSION = "p1.0-draft"
 
 # ------------------------------------------------------------------ fixed rules
@@ -277,17 +278,35 @@ def parse_proxies(raw, columns):
     return out, True
 
 
-def score_proxies(answer, proxy_gold, all_columns, parse_ok=True, level="proxies"):
-    """Per attribute: flagged candidate columns vs measured proxies (level = 'proxies' for the
-    primary threshold, 'proxies_at_0.6' for the secondary one). Flags outside the candidate set
-    are counted apart: on sensitive columns, on excluded columns, or on names that are not columns."""
+def load_literature():
+    """Literature key -> {'literature_identity': {attr: set}, 'literature_any': {attr: set}, 'labels': {(f, attr): label}}."""
+    with open(LIT, encoding="utf-8") as f:
+        lit = json.load(f)
+    identity = {a: set() for a in ATTRS}
+    any_concern = {a: set() for a in ATTRS}
+    labels = {}
+    for e in lit["entries"]:
+        labels[(e["feature"], e["attribute"])] = e["label"]
+        if e["label"] == "proxy":
+            identity[e["attribute"]].add(e["feature"])
+        if e["label"] in ("proxy", "contested", "correlated", "tainted"):
+            any_concern[e["attribute"]].add(e["feature"])
+    return {"version": lit["version"], "literature_identity": identity, "literature_any": any_concern, "labels": labels}
+
+
+def score_proxies(answer, proxy_gold, all_columns, parse_ok=True, level="proxies", gold_sets=None):
+    """Per attribute: flagged candidate columns vs a reference set of proxies.
+    Reference = measured proxies (level = 'proxies' for AUC >= 0.70, 'proxies_at_0.6' for >= 0.60),
+    or, if gold_sets is given ({attr: set of columns}), that set (e.g. the literature key).
+    Flags outside the candidate set are counted apart: on sensitive columns, on excluded columns,
+    or on names that are not columns."""
     nan = float("nan")
     metrics, detail = {}, {}
     for attr in ATTRS:
         a = proxy_gold["attributes"][attr]
         cands = {r["feature"] for r in a["columns"]}
         auc = {r["feature"]: r["auc"] for r in a["columns"]}
-        gold = set(a[level])
+        gold = set(gold_sets[attr]) & cands if gold_sets is not None else set(a[level])
         flagged = {p["feature"] for p in answer if p["reveals"] == attr}
         inside = flagged & cands
         tp, fp, fn = inside & gold, inside - gold, gold - inside
@@ -389,6 +408,12 @@ def report():
     from run_sweep import TRACKING_URI
     with open(OUT, encoding="utf-8") as f:
         proxy_gold = json.load(f)
+    lit = load_literature()
+    # the four references every answer is scored against
+    references = [("measured AUC>=0.70", {"level": "proxies"}),
+                  ("measured AUC>=0.60", {"level": "proxies_at_0.6"}),
+                  ("literature: identity", {"gold_sets": lit["literature_identity"]}),
+                  ("literature: any concern", {"gold_sets": lit["literature_any"]})]
     df, _, _ = load()
     mlflow.set_tracking_uri(TRACKING_URI)
     runs = mlflow.search_runs(experiment_names=[PROXY_EXPERIMENT], filter_string="tags.status = 'ok'")
@@ -399,10 +424,10 @@ def report():
         answer = mlflow.artifacts.load_dict(f"runs:/{run['run_id']}/proxies.json")
         ok = run.get("tags.parse_ok") != "False"
         base = {"model": run["params.model"], "temperature": run["params.temperature"], "seed": run["params.seed"]}
-        for level in ("proxies", "proxies_at_0.6"):
-            m, _ = score_proxies(answer, proxy_gold, list(df.columns), parse_ok=ok, level=level)
+        for ref_name, kwargs in references:
+            m, _ = score_proxies(answer, proxy_gold, list(df.columns), parse_ok=ok, **kwargs)
             for attr in ATTRS:
-                rows.append({**base, "threshold": "0.70" if level == "proxies" else "0.60", "attribute": attr,
+                rows.append({**base, "reference": ref_name, "attribute": attr,
                              **{k: m[f"{attr}_{k}"] for k in ("precision", "recall", "f1", "fp", "n_gold",
                                                               "flag_sensitive", "flag_excluded", "flag_invented",
                                                               "mean_auc_flagged", "mean_auc_unflagged")},
@@ -412,20 +437,35 @@ def report():
     t = pd.DataFrame(rows)
     os.makedirs("rescores", exist_ok=True)
     t.to_csv(os.path.join("rescores", f"proxies_{proxy_gold['version']}.csv"), index=False)
-    keys = ["model", "temperature", "threshold", "attribute"]
-    g = t.groupby(keys)
-    summary = g[["precision", "recall", "f1", "fp", "flag_sensitive", "flag_excluded", "flag_invented",
-                 "mean_auc_flagged", "mean_auc_unflagged", "empty", "parse_fail"]].mean().round(2)
-    summary["n_gold"] = g["n_gold"].first()
+    keys = ["model", "temperature", "attribute", "reference"]
+    order = {name: i for i, (name, _) in enumerate(references)}
+    t = t.sort_values(by=["model", "temperature", "attribute", "reference"],
+                      key=lambda s: s.map(order) if s.name == "reference" else s)
+    g = t.groupby(keys, sort=False)
+    summary = g[["precision", "recall", "f1", "fp", "n_gold"]].agg(
+        {"precision": "mean", "recall": "mean", "f1": "mean", "fp": "mean", "n_gold": "first"}).round(2)
     summary["runs"] = g.size()
-    print("Proxy scores (mean over runs). n_gold = measured proxies at that threshold; precision '-' = "
-          "no candidate flagged; recall '-' = no measured proxy (e.g. age at 0.70)\n")
+    print(f"Proxy scores (mean over runs) against four references: measured key {proxy_gold['version']} at two "
+          f"thresholds, literature key {lit['version']} (identity proxies only / any documented concern).\n"
+          "n_gold = reference proxies for that attribute; precision '-' = no candidate flagged; "
+          "recall '-' = the reference has no proxy for that attribute.\n")
     print(summary.to_string(na_rep="-"))
+
+    # reference-independent columns, once per model x temperature x attribute
+    one = t[t["reference"] == references[0][0]].groupby(["model", "temperature", "attribute"])
+    extra = one[["flag_sensitive", "flag_excluded", "flag_invented", "mean_auc_flagged", "mean_auc_unflagged",
+                 "empty", "parse_fail"]].mean().round(2)
+    print("\nFlags outside the candidate columns (mean per run) and leakage of the flagged columns:\n"
+          "  flag_sensitive = the sensitive columns themselves; flag_excluded = outcomes, scores, identifiers, dates;\n"
+          "  flag_invented = names that are not columns; mean_auc_* = measured AUC of flagged vs unflagged candidates\n")
+    print(extra.to_string(na_rep="-"))
 
     # per-column view: how often the model flagged each candidate, next to its measured AUC
     f = pd.DataFrame(flags)
     n_runs = runs.groupby(["params.model", "params.temperature"]).size()
-    print("\nPer column: share of runs that flagged it, next to its measured AUC (temperature 0.7 runs)")
+    print("\nPer column: measured AUC [literature label] : share of runs that flagged it (temperature 0.7 runs)\n"
+          "  labels: P = proxy, C = contested, R = correlated, T = tainted, - = not discussed")
+    short = {"proxy": "P", "contested": "C", "correlated": "R", "tainted": "T"}
     for attr in ATTRS:
         cols = proxy_gold["attributes"][attr]["columns"]
         print(f"\n  {attr}")
@@ -435,7 +475,8 @@ def report():
                 continue
             sub = f[(f["model"] == model) & (f["temperature"] == "0.7") & (f["attribute"] == attr)] if not f.empty else f
             share = sub["feature"].value_counts() / n if not sub.empty else pd.Series(dtype=float)
-            line = ", ".join(f"{c['feature']} {c['auc']:.2f}:{share.get(c['feature'], 0):.0%}" for c in cols)
+            line = ", ".join(f"{c['feature']} {c['auc']:.2f}[{short.get(lit['labels'].get((c['feature'], attr)), '-')}]"
+                             f":{share.get(c['feature'], 0):.0%}" for c in cols)
             print(f"    {model:<13} {line}")
     print(f"\nPer-run details: rescores/proxies_{proxy_gold['version']}.csv")
 

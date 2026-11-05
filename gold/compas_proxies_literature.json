@@ -1,0 +1,45 @@
+{
+  "dataset": "compas",
+  "version": "L1.0-draft",
+  "status": "DRAFT 2026-11-05. Literature-based proxy key: what published sources say about each candidate column, per attribute. Complements the measured key (compas_proxies.json).",
+  "labels": {
+    "proxy": "the column can reveal who someone is (their race, sex or age); identity proxy",
+    "contested": "sources disagree whether the column is a proxy for the attribute",
+    "correlated": "sources report a correlation with the attribute without calling the column a proxy",
+    "tainted": "sources say the column's values are shaped by discrimination against the group (biased measurement), not that it reveals identity",
+    "not_discussed": "no specific source found"
+  },
+  "scoring_sets": {
+    "literature_identity": "labels: proxy",
+    "literature_any": "labels: proxy, contested, correlated, tainted (any documented fairness concern linking the column to the attribute)"
+  },
+  "sources": {
+    "cfpb_bisg": {"cite": "CFPB, BISG proxy methodology (surname and geography), public code", "url": "https://www.github.com/cfpb/proxy-methodology"},
+    "bisg_2022": {"cite": "How should we proxy for race/ethnicity? Comparing BISG to machine learning methods (2022)", "url": "https://arxiv.org/pdf/2206.14583"},
+    "fryer_levitt_2004": {"cite": "Fryer & Levitt (2004), The Causes and Consequences of Distinctively Black Names, QJE", "url": "https://www.nber.org/papers/w9938"},
+    "bertrand_mullainathan_2004": {"cite": "Bertrand & Mullainathan (2004), Are Emily and Greg More Employable than Lakisha and Jamal?, AER", "url": "https://nber.org/system/files/working_papers/w9873/w9873.pdf"},
+    "santamaria_2018": {"cite": "Santamaria & Mihaljevic (2018), Comparison and benchmark of name-to-gender inference services, PeerJ CS", "url": "https://peerj.com/articles/cs-156"},
+    "harcourt_2010": {"cite": "Harcourt (2010), Risk as a Proxy for Race", "url": "https://scholarship.law.columbia.edu/faculty_scholarship/1655"},
+    "mayson_2019": {"cite": "Mayson (2019), Bias In, Bias Out, Yale Law Journal 128", "url": "https://www.yalelawjournal.org/pdf/Mayson_p5g2tz2m.pdf"},
+    "rudin_2020": {"cite": "Rudin, Wang & Coker (2020), The Age of Secrecy and Unfairness in Recidivism Prediction, HDSR", "url": "https://www.arxiv.org/pdf/1811.00731"},
+    "aclu_2013": {"cite": "ACLU (2013), The War on Marijuana in Black and White", "url": "https://www.aclu.org/news/new-aclu-report-finds-overwhelming-racial-bias-marijuana-arrests"},
+    "rehavi_starr_2014": {"cite": "Rehavi & Starr (2014), Racial Disparity in Federal Criminal Sentences, JPE", "url": "https://econ.cms.arts.ubc.ca/wp-content/uploads/sites/38/2015/01/pdf_paper_marit-rehavi-racial_disparity.pdf"}
+  },
+  "entries": [
+    {"feature": "name", "attribute": "race", "label": "proxy", "sources": ["cfpb_bisg", "bisg_2022", "fryer_levitt_2004"], "note": "full name contains the surname (BISG) and the first name"},
+    {"feature": "last", "attribute": "race", "label": "proxy", "sources": ["cfpb_bisg", "bisg_2022"], "note": "surname-based race estimation"},
+    {"feature": "first", "attribute": "race", "label": "proxy", "sources": ["fryer_levitt_2004", "bertrand_mullainathan_2004"], "note": "distinctively Black first names; names signal race"},
+    {"feature": "first", "attribute": "sex", "label": "proxy", "sources": ["santamaria_2018"], "note": "name-to-gender inference, error as low as 0.9% (mostly Western names)"},
+    {"feature": "name", "attribute": "sex", "label": "proxy", "sources": ["santamaria_2018"], "note": "contains the first name"},
+    {"feature": "priors_count", "attribute": "race", "label": "contested", "sources": ["harcourt_2010", "mayson_2019", "rudin_2020"], "note": "proxy for race (Harcourt) vs biased measurement (Mayson) vs legitimate factor correlated with race (Rudin)"},
+    {"feature": "priors_count.1", "attribute": "race", "label": "contested", "sources": ["harcourt_2010", "mayson_2019", "rudin_2020"], "note": "duplicate of priors_count"},
+    {"feature": "priors_count", "attribute": "age", "label": "correlated", "sources": ["rudin_2020"], "note": "'criminal history is correlated with age'"},
+    {"feature": "priors_count.1", "attribute": "age", "label": "correlated", "sources": ["rudin_2020"], "note": "duplicate of priors_count"},
+    {"feature": "c_charge_desc", "attribute": "race", "label": "tainted", "sources": ["aclu_2013"], "note": "drug-enforcement disparities: 3.7x marijuana-possession arrests for Black people despite comparable use"},
+    {"feature": "c_charge_degree", "attribute": "race", "label": "tainted", "sources": ["rehavi_starr_2014"], "note": "charging disparities, odds of a mandatory-minimum charge 1.75x for Black arrestees (US federal, not Broward County)"}
+  ],
+  "gaps": [
+    "juvenile counts -> race: only the general arrest-record argument (Mayson), no specific source; labelled not_discussed",
+    "names -> age and all other column/attribute pairs: no specific source found; labelled not_discussed"
+  ]
+}
