@@ -1,0 +1,475 @@
+{
+  "dataset": "compas",
+  "file": "compas-scores-two-years_v1.csv",
+  "version": "1.2-draft",
+  "status": "DRAFT 2026-11-04. Labels unchanged from 1.0-draft. dob question closed: dob follows age (sensitive under the Charter key). Remaining open questions below.",
+  "changelog": [
+    "1.0-draft (2026-10-24): binary charter/gdpr labels per supervisor guidance.",
+    "1.1-draft (2026-10-27): + charter_grounds / gdpr_grounds on sensitive columns; + family on every column; + families table with gdpr_art10 flag.",
+    "1.2-draft (2026-11-04): dob question closed (dob gets the same label as age; based on a review of 13 COMPAS sources). No label changed."
+  ],
+  "data_notes": [
+    "Duplicate source columns: decile_score and priors_count appear twice; pandas loads the copies as decile_score.1 and priors_count.1.",
+    "The _v1 file ends with 3 junk rows (7217 vs ProPublica's 7214) that hold only decile_score.1 = 4.5096, apparently a leftover mean. run_sweep.py drops rows with fewer than 2 values."
+  ],
+  "activity_1": {
+    "name": "sensitive_features",
+    "rule": "Binary. A column is sensitive only if it directly records a ground listed in the legal basis. Indirect revelation (proxies) is step 2. The target is never sensitive.",
+    "ground_rule": "Strict scoring: a hit counts only if the model's ground is in the column's <basis>_grounds list. Grounds are written exactly as in activity1.CHARTER_GROUNDS / GDPR_GROUNDS.",
+    "bases": {
+      "charter": {
+        "source": "EU Charter of Fundamental Rights, Art. 21(1) and 21(2)",
+        "sensitive": [
+          "age",
+          "age_cat",
+          "dob",
+          "race",
+          "sex"
+        ]
+      },
+      "gdpr": {
+        "source": "GDPR (Regulation (EU) 2016/679), Art. 9(1)",
+        "sensitive": [
+          "race"
+        ]
+      }
+    },
+    "families": {
+      "protected": {
+        "description": "Directly records a listed ground.",
+        "gdpr_art10": false
+      },
+      "name": {
+        "description": "Personal names (candidate ethnicity proxy, step 2).",
+        "gdpr_art10": false
+      },
+      "identifier": {
+        "description": "Row and case identifiers.",
+        "gdpr_art10": false
+      },
+      "criminal_history": {
+        "description": "Counts of prior offences (adult and juvenile).",
+        "gdpr_art10": true
+      },
+      "current_charge": {
+        "description": "Degree and description of the charge at screening.",
+        "gdpr_art10": true
+      },
+      "recidivism_outcome": {
+        "description": "Re-offence records and survival fields recorded after screening.",
+        "gdpr_art10": true
+      },
+      "risk_score": {
+        "description": "COMPAS model outputs and assessment type.",
+        "gdpr_art10": false
+      },
+      "process_date": {
+        "description": "Dates and day counts of arrest, jail, custody and screening.",
+        "gdpr_art10": false
+      },
+      "target": {
+        "description": "The prediction target (two-year re-arrest).",
+        "gdpr_art10": true
+      }
+    },
+    "resolved_questions": [
+      "dob (2026-11-04): sensitive under the Charter, as an encoding of age (rule R1); same label as age under every key. Basis: review of 13 COMPAS sources (Literature Notes, 'COMPAS: which columns the literature treats as sensitive')."
+    ],
+    "open_questions": [
+      "race, Charter grounds: accept 'colour' too? Currently race + ethnic or social origin (the column mixes race and ethnicity, e.g. Hispanic).",
+      "Family boundaries are a draft annotation, e.g. whether case numbers count as criminal-offence data (gdpr_art10)."
+    ],
+    "columns": [
+      {
+        "feature": "race",
+        "charter": true,
+        "gdpr": true,
+        "family": "protected",
+        "reason": "Race (EU Charter Art. 21(1)); racial or ethnic origin (GDPR Art. 9(1)).",
+        "charter_grounds": [
+          "race",
+          "ethnic or social origin"
+        ],
+        "gdpr_grounds": [
+          "racial or ethnic origin"
+        ]
+      },
+      {
+        "feature": "sex",
+        "charter": true,
+        "gdpr": false,
+        "family": "protected",
+        "reason": "Sex (EU Charter Art. 21(1)). Not a GDPR Art. 9 special category.",
+        "charter_grounds": [
+          "sex"
+        ]
+      },
+      {
+        "feature": "age",
+        "charter": true,
+        "gdpr": false,
+        "family": "protected",
+        "reason": "Age (EU Charter Art. 21(1)). Not a GDPR Art. 9 special category.",
+        "charter_grounds": [
+          "age"
+        ]
+      },
+      {
+        "feature": "age_cat",
+        "charter": true,
+        "gdpr": false,
+        "family": "protected",
+        "reason": "Age, binned (EU Charter Art. 21(1)). Not a GDPR Art. 9 special category.",
+        "charter_grounds": [
+          "age"
+        ]
+      },
+      {
+        "feature": "dob",
+        "charter": true,
+        "gdpr": false,
+        "family": "protected",
+        "reason": "Records age directly (EU Charter Art. 21(1)), rule R1. Decided 2026-11-04: dob follows the label of age; a review of 13 COMPAS sources found none that treats dob separately, and the one automatic detector that considers it (FairLens) maps it to age. Not a GDPR Art. 9 special category. Ground is 'age', not 'birth' (Art. 21 'birth' means birth status, not date of birth).",
+        "charter_grounds": [
+          "age"
+        ]
+      },
+      {
+        "feature": "name",
+        "charter": false,
+        "gdpr": false,
+        "family": "name",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "first",
+        "charter": false,
+        "gdpr": false,
+        "family": "name",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "last",
+        "charter": false,
+        "gdpr": false,
+        "family": "name",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "priors_count",
+        "charter": false,
+        "gdpr": false,
+        "family": "criminal_history",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "priors_count.1",
+        "charter": false,
+        "gdpr": false,
+        "family": "criminal_history",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "juv_fel_count",
+        "charter": false,
+        "gdpr": false,
+        "family": "criminal_history",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "juv_misd_count",
+        "charter": false,
+        "gdpr": false,
+        "family": "criminal_history",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "juv_other_count",
+        "charter": false,
+        "gdpr": false,
+        "family": "criminal_history",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "id",
+        "charter": false,
+        "gdpr": false,
+        "family": "identifier",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "compas_screening_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "decile_score",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "decile_score.1",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "score_text",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "type_of_assessment",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "screening_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "v_type_of_assessment",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "v_decile_score",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "v_score_text",
+        "charter": false,
+        "gdpr": false,
+        "family": "risk_score",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "v_screening_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "days_b_screening_arrest",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_jail_in",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_jail_out",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_case_number",
+        "charter": false,
+        "gdpr": false,
+        "family": "identifier",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_offense_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_arrest_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_days_from_compas",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_charge_degree",
+        "charter": false,
+        "gdpr": false,
+        "family": "current_charge",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "c_charge_desc",
+        "charter": false,
+        "gdpr": false,
+        "family": "current_charge",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "in_custody",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "out_custody",
+        "charter": false,
+        "gdpr": false,
+        "family": "process_date",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "start",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "end",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "is_recid",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "two_year_recid",
+        "charter": false,
+        "gdpr": false,
+        "family": "target",
+        "reason": "Target. Never sensitive."
+      },
+      {
+        "feature": "is_violent_recid",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "violent_recid",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "event",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_case_number",
+        "charter": false,
+        "gdpr": false,
+        "family": "identifier",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_charge_degree",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_days_from_arrest",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_offense_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_charge_desc",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_jail_in",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "r_jail_out",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "vr_case_number",
+        "charter": false,
+        "gdpr": false,
+        "family": "identifier",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "vr_charge_degree",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "vr_offense_date",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "vr_charge_desc",
+        "charter": false,
+        "gdpr": false,
+        "family": "recidivism_outcome",
+        "reason": "Not a listed ground."
+      }
+    ]
+  }
+}

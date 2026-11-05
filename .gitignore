@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.tar
+
+# Experiment logs (generated)
+mlruns/
+mlflow.db
+
+# Raw data: personal records, download from ProPublica
+compas-scores-two-years*.csv
+probes/
+prompts/
+

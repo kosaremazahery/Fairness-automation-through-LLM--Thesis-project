@@ -1,0 +1,6 @@
+ollama
+pandas
+numpy
+requests
+mlflow
+scikit-learn

@@ -1,0 +1,323 @@
+{
+  "dataset": "compas",
+  "version": "p1.0-draft",
+  "gold_version": "1.2-draft",
+  "rows": 7214,
+  "rules": {
+    "protected_attributes": {
+      "race": {
+        "primary": "African-American vs Caucasian (rows of other groups left out of this comparison). Same contrast as Ceccon et al. 2025 and as 53 of 59 COMPAS papers in Simson et al. 2024.",
+        "secondary": "all 6 race groups, one-vs-rest AUC averaged over groups (macro), all rows"
+      },
+      "sex": {
+        "primary": "Male vs Female, all rows"
+      },
+      "age": {
+        "primary": "under 25 vs 25 and over, all rows (the contrast highlighted by ProPublica)",
+        "secondary": "the 3 age_cat groups, one-vs-rest macro AUC"
+      }
+    },
+    "candidate_columns": "Only columns that could be a legitimate model input: gold families 'name', 'criminal_history', 'current_charge'. Excluded by rule: the sensitive columns themselves, the target, re-offence outcomes (recidivism_outcome), COMPAS model outputs (risk_score), identifiers, process dates.",
+    "candidate_families": [
+      "name",
+      "criminal_history",
+      "current_charge"
+    ],
+    "encoding": {
+      "numeric": "the value itself, gradient-boosted trees (HistGradientBoostingClassifier, defaults)",
+      "categorical (<= 50 distinct values)": "one-hot + logistic regression",
+      "text (> 50 distinct values, e.g. names, charge descriptions)": "character 2-4-grams (TF-IDF, char_wb) + logistic regression"
+    },
+    "max_categories_for_one_hot": 50,
+    "validation": "5-fold stratified cross-validation, shuffled, random_state=0; AUC of the out-of-fold predicted probabilities (so high-cardinality columns cannot score by memorising rows)",
+    "threshold_primary": 0.7,
+    "threshold_primary_source": "AUC 0.70-0.80 = 'acceptable discrimination' (Hosmer & Lemeshow, Applied Logistic Regression)",
+    "threshold_secondary": 0.6,
+    "dataset_level": "sAUC: all candidate columns together, same encodings, logistic regression on the combined features"
+  },
+  "attributes": {
+    "race": {
+      "definition": {
+        "primary": "African-American vs Caucasian (rows of other groups left out of this comparison). Same contrast as Ceccon et al. 2025 and as 53 of 59 COMPAS papers in Simson et al. 2024.",
+        "secondary": "all 6 race groups, one-vs-rest AUC averaged over groups (macro), all rows"
+      },
+      "sauc": 0.832,
+      "columns": [
+        {
+          "feature": "name",
+          "kind": "text",
+          "auc": 0.781,
+          "proxy": true,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.77
+        },
+        {
+          "feature": "last",
+          "kind": "text",
+          "auc": 0.769,
+          "proxy": true,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.748
+        },
+        {
+          "feature": "first",
+          "kind": "text",
+          "auc": 0.72,
+          "proxy": true,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.663
+        },
+        {
+          "feature": "c_charge_desc",
+          "kind": "text",
+          "auc": 0.614,
+          "proxy": false,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.569
+        },
+        {
+          "feature": "priors_count",
+          "kind": "numeric",
+          "auc": 0.598,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.511
+        },
+        {
+          "feature": "priors_count.1",
+          "kind": "numeric",
+          "auc": 0.598,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.511
+        },
+        {
+          "feature": "c_charge_degree",
+          "kind": "categorical",
+          "auc": 0.539,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.497
+        },
+        {
+          "feature": "juv_misd_count",
+          "kind": "numeric",
+          "auc": 0.524,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.497
+        },
+        {
+          "feature": "juv_fel_count",
+          "kind": "numeric",
+          "auc": 0.52,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.495
+        },
+        {
+          "feature": "juv_other_count",
+          "kind": "numeric",
+          "auc": 0.514,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.503
+        }
+      ],
+      "proxies": [
+        "name",
+        "last",
+        "first"
+      ],
+      "proxies_at_0.6": [
+        "name",
+        "last",
+        "first",
+        "c_charge_desc"
+      ]
+    },
+    "sex": {
+      "definition": {
+        "primary": "Male vs Female, all rows"
+      },
+      "sauc": 0.939,
+      "columns": [
+        {
+          "feature": "first",
+          "kind": "text",
+          "auc": 0.941,
+          "proxy": true,
+          "proxy_at_0.6": true
+        },
+        {
+          "feature": "name",
+          "kind": "text",
+          "auc": 0.904,
+          "proxy": true,
+          "proxy_at_0.6": true
+        },
+        {
+          "feature": "c_charge_desc",
+          "kind": "text",
+          "auc": 0.611,
+          "proxy": false,
+          "proxy_at_0.6": true
+        },
+        {
+          "feature": "priors_count",
+          "kind": "numeric",
+          "auc": 0.588,
+          "proxy": false,
+          "proxy_at_0.6": false
+        },
+        {
+          "feature": "priors_count.1",
+          "kind": "numeric",
+          "auc": 0.588,
+          "proxy": false,
+          "proxy_at_0.6": false
+        },
+        {
+          "feature": "c_charge_degree",
+          "kind": "categorical",
+          "auc": 0.526,
+          "proxy": false,
+          "proxy_at_0.6": false
+        },
+        {
+          "feature": "juv_other_count",
+          "kind": "numeric",
+          "auc": 0.52,
+          "proxy": false,
+          "proxy_at_0.6": false
+        },
+        {
+          "feature": "juv_fel_count",
+          "kind": "numeric",
+          "auc": 0.516,
+          "proxy": false,
+          "proxy_at_0.6": false
+        },
+        {
+          "feature": "juv_misd_count",
+          "kind": "numeric",
+          "auc": 0.514,
+          "proxy": false,
+          "proxy_at_0.6": false
+        },
+        {
+          "feature": "last",
+          "kind": "text",
+          "auc": 0.507,
+          "proxy": false,
+          "proxy_at_0.6": false
+        }
+      ],
+      "proxies": [
+        "first",
+        "name"
+      ],
+      "proxies_at_0.6": [
+        "first",
+        "name",
+        "c_charge_desc"
+      ]
+    },
+    "age": {
+      "definition": {
+        "primary": "under 25 vs 25 and over, all rows (the contrast highlighted by ProPublica)",
+        "secondary": "the 3 age_cat groups, one-vs-rest macro AUC"
+      },
+      "sauc": 0.776,
+      "columns": [
+        {
+          "feature": "c_charge_desc",
+          "kind": "text",
+          "auc": 0.652,
+          "proxy": false,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.61
+        },
+        {
+          "feature": "priors_count",
+          "kind": "numeric",
+          "auc": 0.642,
+          "proxy": false,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.584
+        },
+        {
+          "feature": "priors_count.1",
+          "kind": "numeric",
+          "auc": 0.642,
+          "proxy": false,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.584
+        },
+        {
+          "feature": "first",
+          "kind": "text",
+          "auc": 0.612,
+          "proxy": false,
+          "proxy_at_0.6": true,
+          "auc_secondary": 0.601
+        },
+        {
+          "feature": "name",
+          "kind": "text",
+          "auc": 0.576,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.571
+        },
+        {
+          "feature": "juv_other_count",
+          "kind": "numeric",
+          "auc": 0.56,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.535
+        },
+        {
+          "feature": "c_charge_degree",
+          "kind": "categorical",
+          "auc": 0.535,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.523
+        },
+        {
+          "feature": "juv_misd_count",
+          "kind": "numeric",
+          "auc": 0.526,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.52
+        },
+        {
+          "feature": "juv_fel_count",
+          "kind": "numeric",
+          "auc": 0.509,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.511
+        },
+        {
+          "feature": "last",
+          "kind": "text",
+          "auc": 0.495,
+          "proxy": false,
+          "proxy_at_0.6": false,
+          "auc_secondary": 0.506
+        }
+      ],
+      "proxies": [],
+      "proxies_at_0.6": [
+        "c_charge_desc",
+        "priors_count",
+        "priors_count.1",
+        "first"
+      ]
+    }
+  }
+}
