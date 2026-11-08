@@ -155,7 +155,7 @@ tools in a loop), and the `Dockerfile` (which runs `main.py`).
 | Step 1 on COMPAS, llama3.2:3b and llama3.1:8b | done |
 | Measured proxy key (COMPAS) | done |
 | Literature proxy key (COMPAS) | draft |
-| Proxy step: 3B | done; 8B to run |
+| Proxy step: llama3.2:3b and llama3.1:8b | done |
 | Adult dataset (both steps) | to do |
 | Larger models (e.g. through OpenRouter) | to decide with supervisors |
 | "Tainted features" as a second warning type | to decide with supervisors |
@@ -167,7 +167,9 @@ tools in a loop), and the `Dockerfile` (which runs `main.py`).
 - **Age:** both models find race and sex, and almost never find age. This matches the usual
   treatment of COMPAS in the fairness literature.
 - **Proxies:** the names are the only measured proxies (race: AUC 0.72–0.78; sex: 0.90–0.94). The
-  3B model never flags them; its few flags match the literature's *tainted* columns instead.
+  3B model never flags them; its few flags match the literature's *tainted* columns instead. The 8B
+  model starts to find the names for race (precision 1.00, recall 0.27) but never flags the first
+  name for sex, the strongest proxy, and flags many columns outside the candidate set.
 
 ## References
 
