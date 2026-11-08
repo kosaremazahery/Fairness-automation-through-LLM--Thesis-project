@@ -1,5 +1,7 @@
 # LLM fairness automation: sensitive features and proxies
 
+Work in progress, MSc thesis, expected March 2027. Pilot results on COMPAS below; Adult dataset and larger models in progress.
+
 Master's thesis project (University of Bologna) on whether, and how reliably, a large language
 model can automate a fairness check on a tabular dataset: given the dataset's columns, which ones
 are **sensitive features**, and which ones are **proxies** for them?
