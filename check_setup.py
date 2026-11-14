@@ -15,6 +15,7 @@ os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 
 MODEL = "llama3.2:3b"
 CSV = "compas-scores-two-years_v1.csv"
+ADULT_CSV = "adult.csv"          # UCI Adult, train + test combined (Kaggle/OpenML copy)
 results = []
 
 
@@ -34,7 +35,8 @@ print(f"Folder: {os.getcwd()}\n")
 # 1. Right folder, all files present
 files = ["run_sweep.py", "activity1.py", "scoring.py", "rescore.py", "llm_fairness.py", "probe_prompt.py",
          "proxy.py", CSV, os.path.join("gold", "compas.json"),
-         os.path.join("gold", "compas_proxies_literature.json")]
+         os.path.join("gold", "compas_proxies_literature.json"),
+         ADULT_CSV, os.path.join("gold", "adult.json")]
 missing = [f for f in files if not os.path.exists(f)]
 check("All project files are in this folder", not missing,
       f"missing: {missing}. cd into llm-fairness-compas, or move these files here.")
@@ -93,6 +95,20 @@ if not missing:
           "gold/compas.json is older than 1.1-draft. Replace it with the new one.")
     check("Gold set covers every CSV column", names == set(df.columns),
           f"not in gold: {sorted(set(df.columns) - names)}; not in CSV: {sorted(names - set(df.columns))}")
+
+    # 4b. Adult: same checks as COMPAS
+    adf = pd.read_csv(ADULT_CSV).dropna(thresh=2)
+    check(f"Adult CSV loads with 48842 rows (got {len(adf)})", len(adf) == 48842,
+          "unexpected row count; check adult.csv (train + test combined, header row).")
+    agold = json.loads(read(os.path.join("gold", "adult.json")))
+    aa1 = agold["activity_1"]
+    anames = {c["feature"] for c in aa1["columns"]}
+    check(f"Adult gold set has the COMPAS structure (version {agold.get('version')})",
+          list(agold) == list(gold) and list(aa1) == list(a1)
+          and all("charter_grounds" in c for c in aa1["columns"] if c["charter"]),
+          "gold/adult.json does not follow the gold/compas.json structure. Replace it with the new one.")
+    check("Adult gold set covers every CSV column", anames == set(adf.columns),
+          f"not in gold: {sorted(set(adf.columns) - anames)}; not in CSV: {sorted(anames - set(adf.columns))}")
 
     # 5. Parser and scoring on fake answers (no model needed)
     from activity1 import parse_warnings

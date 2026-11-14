@@ -1,0 +1,198 @@
+{
+  "dataset": "adult",
+  "file": "adult.csv",
+  "version": "1.0-draft",
+  "status": "DRAFT 2026-11-10. Same rules and structure as compas.json 1.2-draft. The EU Charter Art. 21 and GDPR Art. 9(1) are used only as definitions of 'sensitive', not as legal claims. Open questions below.",
+  "changelog": [
+    "1.0-draft (2026-11-10): binary charter/gdpr labels, charter_grounds / gdpr_grounds on sensitive columns, family on every column, families table with gdpr_art10 flag (same structure as compas.json 1.2-draft)."
+  ],
+  "data_notes": [
+    "48,842 rows = UCI train (32,561) + test (16,281) combined; class balance, sex and race counts match the UCI documentation.",
+    "Kaggle/OpenML naming: 'gender' and 'educational-num' (UCI: 'sex', 'education-num'); test labels already stripped of the trailing '.'.",
+    "Missing values are the string '?': workclass 2,799, occupation 2,809, native-country 857. Load with na_values='?'.",
+    "52 exact duplicate rows.",
+    "No identifier, name or criminal-record columns, so gdpr_art10 is false for every family."
+  ],
+  "activity_1": {
+    "name": "sensitive_features",
+    "rule": "Binary. A column is sensitive only if it directly records a ground listed in the legal basis. Indirect revelation (proxies) is step 2. The target is never sensitive.",
+    "ground_rule": "Strict scoring: a hit counts only if the model's ground is in the column's <basis>_grounds list. Grounds are written exactly as in activity1.CHARTER_GROUNDS / GDPR_GROUNDS.",
+    "bases": {
+      "charter": {
+        "source": "EU Charter of Fundamental Rights, Art. 21(1) and 21(2)",
+        "sensitive": [
+          "age",
+          "gender",
+          "race"
+        ]
+      },
+      "gdpr": {
+        "source": "GDPR (Regulation (EU) 2016/679), Art. 9(1)",
+        "sensitive": [
+          "race"
+        ]
+      }
+    },
+    "families": {
+      "protected": {
+        "description": "Directly records a listed ground.",
+        "gdpr_art10": false
+      },
+      "origin": {
+        "description": "Country of birth (candidate ethnicity / nationality proxy, step 2).",
+        "gdpr_art10": false
+      },
+      "household": {
+        "description": "Marital status and household role (candidate sex proxy, step 2).",
+        "gdpr_art10": false
+      },
+      "education": {
+        "description": "Attained education, as label and as numeric code.",
+        "gdpr_art10": false
+      },
+      "employment": {
+        "description": "Employer type, occupation, hours worked.",
+        "gdpr_art10": false
+      },
+      "capital": {
+        "description": "Capital gains and losses in the year.",
+        "gdpr_art10": false
+      },
+      "survey_weight": {
+        "description": "Census sampling weight.",
+        "gdpr_art10": false
+      },
+      "target": {
+        "description": "The prediction target (income above $50k).",
+        "gdpr_art10": false
+      }
+    },
+    "resolved_questions": [],
+    "open_questions": [
+      "native-country, Charter: currently false (country of birth is not a listed ground as written). Alternative: true with grounds ['ethnic or social origin', 'nationality'], as part of the fairness literature treats it as protected.",
+      "relationship, Charter: currently false and sent to step 2. 'Husband'/'Wife' encode sex for about 45% of rows (in this file Husband 19,715 M / 1 F; Wife 2,328 F / 3 M). Unlike dob for age in COMPAS, the other values carry no sex information.",
+      "capital-gain / capital-loss vs 'property': currently false (income in the year, not property owned).",
+      "race, Charter grounds: accept 'colour' too? Same question as COMPAS."
+    ],
+    "columns": [
+      {
+        "feature": "race",
+        "charter": true,
+        "gdpr": true,
+        "family": "protected",
+        "reason": "Race (EU Charter Art. 21(1)); racial or ethnic origin (GDPR Art. 9(1)).",
+        "charter_grounds": [
+          "race",
+          "ethnic or social origin"
+        ],
+        "gdpr_grounds": [
+          "racial or ethnic origin"
+        ]
+      },
+      {
+        "feature": "gender",
+        "charter": true,
+        "gdpr": false,
+        "family": "protected",
+        "reason": "Sex (EU Charter Art. 21(1)). Column is named 'gender' but holds the census sex variable (Male/Female). Not a GDPR Art. 9 special category.",
+        "charter_grounds": [
+          "sex"
+        ]
+      },
+      {
+        "feature": "age",
+        "charter": true,
+        "gdpr": false,
+        "family": "protected",
+        "reason": "Age (EU Charter Art. 21(1)). Not a GDPR Art. 9 special category.",
+        "charter_grounds": [
+          "age"
+        ]
+      },
+      {
+        "feature": "native-country",
+        "charter": false,
+        "gdpr": false,
+        "family": "origin",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2. Records country of birth, which is neither 'nationality' (citizenship) nor 'ethnic or social origin' as written in the definition; 'birth' means birth status, not place of birth."
+      },
+      {
+        "feature": "relationship",
+        "charter": false,
+        "gdpr": false,
+        "family": "household",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2. Records household role; the values Husband/Wife reveal sex for married people."
+      },
+      {
+        "feature": "marital-status",
+        "charter": false,
+        "gdpr": false,
+        "family": "household",
+        "reason": "Not a listed ground; candidate proxy, handled in step 2."
+      },
+      {
+        "feature": "education",
+        "charter": false,
+        "gdpr": false,
+        "family": "education",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "educational-num",
+        "charter": false,
+        "gdpr": false,
+        "family": "education",
+        "reason": "Not a listed ground. Numeric code of education (1:1 duplicate)."
+      },
+      {
+        "feature": "workclass",
+        "charter": false,
+        "gdpr": false,
+        "family": "employment",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "occupation",
+        "charter": false,
+        "gdpr": false,
+        "family": "employment",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "hours-per-week",
+        "charter": false,
+        "gdpr": false,
+        "family": "employment",
+        "reason": "Not a listed ground."
+      },
+      {
+        "feature": "capital-gain",
+        "charter": false,
+        "gdpr": false,
+        "family": "capital",
+        "reason": "Not a listed ground. Records yearly investment income, not property owned ('property')."
+      },
+      {
+        "feature": "capital-loss",
+        "charter": false,
+        "gdpr": false,
+        "family": "capital",
+        "reason": "Not a listed ground. Records yearly investment income, not property owned ('property')."
+      },
+      {
+        "feature": "fnlwgt",
+        "charter": false,
+        "gdpr": false,
+        "family": "survey_weight",
+        "reason": "Not a listed ground. Census sampling weight, not an attribute of the person."
+      },
+      {
+        "feature": "income",
+        "charter": false,
+        "gdpr": false,
+        "family": "target",
+        "reason": "Target. Never sensitive."
+      }
+    ]
+  }
+}

@@ -15,7 +15,9 @@ if something must change, all runs are redone and the change is reported.
 | Sampling | temperature 0 x seed 0, plus temperature 0.7 x seeds 0-4 | `run_sweep.SAMPLING` | One deterministic answer + 5 sampled ones to measure stability |
 | Forced JSON | on (JSON schema) | `activity1.build_schema` | Free text was tested (probe version D) and changed nothing |
 | Gold set | `gold/compas.json` version 1.2-draft (labels unchanged since 1.0-draft) | `gold/` | dob decided 4 Nov (follows age); open: colour, Art. 10 families |
+| Gold set (Adult) | `gold/adult.json` version 1.0-draft, same structure as compas.json | `gold/` | Added 10 Nov. Charter: age, gender, race; GDPR: race. Open: native-country, relationship, capital-gain/loss vs 'property', colour |
 | Data | `compas-scores-two-years_v1.csv`, 3 junk rows dropped -> 7,214 rows | `run_sweep.run_one` | Not in the public repository (personal records): download from ProPublica, see README |
+| Data (Adult) | `adult.csv`, UCI train + test combined (Kaggle/OpenML copy) -> 48,842 rows, loaded exactly like COMPAS (`?` left as a value, as in the raw file) | `run_sweep.DATASETS` | Target `income`. Public data (CC BY 4.0) |
 | First model | llama3.2:3b, then llama3.1:8b with the same settings | `run_sweep.MODELS` | |
 
 Recorded automatically with every run (MLflow params): prompt_sha, max_tokens, temperature,
@@ -33,21 +35,33 @@ Every MLflow run stores `prompt_sha`. Runs of the frozen setup have exactly thes
 
 The exact texts are in `prompts/activity1_prompt_<variant>.txt`. That folder is kept out of the public repository, because the prompts show three example values per column, including real defendants' names. Anyone with the CSV can rebuild them with `activity1.build_prompt`; the fingerprints above confirm the text is identical.
 
+## Prompt fingerprints (Adult)
+
+Same prompt template and settings as COMPAS; only the data differs. Computed 10 Nov from
+`adult.csv` with pandas 3 (the version that also reproduces the COMPAS fingerprints above).
+
+| Variant | prompt_sha |
+|---|---|
+| minimal | aab8340ab931 |
+| charter | 559dac53d68a |
+| gdpr | c8eae124a4ab |
+
 ## Files
 
 | File | Job | Fingerprint (SHA-256, first 12) |
 |---|---|---|
 | activity1.py | builds the prompts, calls the model, reads the answer | 88c68ca17d23 |
 | scoring.py | grades an answer (lenient, strict, failed answers, error families) | 1960305b701d |
-| run_sweep.py | runs all model x prompt x seed combinations into MLflow (MODELS = 3B and 8B) | 89668af2e352 |
+| run_sweep.py | runs all model x prompt x seed combinations into MLflow (MODELS = 3B and 8B; DATASETS = compas, adult; `--datasets` / `--models` pick a subset) | 738eb4bdc399 |
 | rescore.py | re-grades saved answers; frozen-setup runs only (`--all` every run; `--key charter` shared key) | ac5e72486ea6 |
 | llm_fairness.py | talks to Ollama; records Ollama version and model build | e21547946949 |
-| check_setup.py | checks files, data, gold sets, scoring, scikit-learn, Ollama (25 checks) | 990c70eb4de5 |
+| check_setup.py | checks files, data, gold sets (COMPAS and Adult), scoring, scikit-learn, Ollama (28 checks) | 4d99303a2920 |
 | show_reasons.py | prints the model's reasons for the latest runs | 65a5a507a9b7 |
 | probe_prompt.py | prompt diagnostics (not part of the experiment) | a30043ccf9a4 |
 | import_probes.py | loads frozen-setup probe runs into MLflow (no model calls) | e16678da27e4 |
 | proxy.py | step 2: measured proxies, LLM proxies, report against both keys | 84afc00be38e |
 | gold/compas_proxies_literature.json | literature proxy key L1.0-draft, with sources | 0a8a919c5425 |
+| gold/adult.json | Adult gold set 1.0-draft | 3a81c45fbdd0 |
 
 run_sweep.py's fingerprint changes whenever MODELS is edited (adding a model is the intended change); all other files must match. To check a file on Windows (PowerShell): `Get-FileHash activity1.py` — the first 12 characters
 (lower case) must match the table.
@@ -64,3 +78,10 @@ run_sweep.py's fingerprint changes whenever MODELS is edited (adding a model is 
 3. `python run_sweep.py` -> runs only what is missing (nothing, if step 2 imported all 18)
 4. `python rescore.py` -> summary tables
 5. add `"llama3.1:8b"` to `MODELS` in `run_sweep.py`, then repeat 3-4
+
+Adult (added 14 Nov; COMPAS runs above are unchanged and are skipped as already done):
+
+6. `python check_setup.py` -> 28/28
+7. `python run_sweep.py --datasets adult --models llama3.2:3b` -> 18 runs
+8. `python rescore.py --gold gold/adult.json` (and `--key charter`)
+9. `python run_sweep.py --datasets adult --models llama3.1:8b`, then repeat 8

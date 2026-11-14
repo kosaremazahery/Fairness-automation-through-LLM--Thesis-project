@@ -20,6 +20,9 @@ Temperature and seeds (see SAMPLING below)
                     draws, so each (seed, temperature) answer is reproducible, and several
                     seeds show how STABLE the model's judgement is.
 
+Run a subset (same settings, nothing else changes):
+    python run_sweep.py --datasets adult --models llama3.2:3b
+
 View results:   mlflow ui --backend-store-uri sqlite:///mlflow.db
 then open http://127.0.0.1:5000
 Summary tables: python rescore.py
@@ -50,7 +53,7 @@ EXPERIMENT_NAME = "llm-fairness-warnings"
 
 DATASETS = {
     "compas": {"path": "compas-scores-two-years_v1.csv", "target_col": "two_year_recid"},
-    # "adult": {"path": "adult.csv", "target_col": "class"},
+    "adult": {"path": "adult.csv", "target_col": "income"},
 }
 MODELS = ["llama3.2:3b", "llama3.1:8b"]                       # must match a name from `ollama list`
 PROMPT_VARIANTS = ["minimal", "charter", "gdpr"]
@@ -211,6 +214,16 @@ def run_one(dataset_name, cfg, model, variant, temperature, seed):
 
 # ---------------------------------------------------------------- sweep
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Run the activity-1 sweep into MLflow.")
+    parser.add_argument("--datasets", nargs="+", choices=list(DATASETS), default=list(DATASETS),
+                        help="run only these datasets (default: all in DATASETS)")
+    parser.add_argument("--models", nargs="+", choices=MODELS, default=MODELS,
+                        help="run only these models (default: all in MODELS)")
+    args = parser.parse_args()
+    datasets = {k: DATASETS[k] for k in args.datasets}
+    models = args.models
+
     mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT_NAME)
 
@@ -225,9 +238,9 @@ def main():
         print(f"Code at commit {commit} (clean).\n")
 
     pairs = sampling_grid()
-    grid = list(itertools.product(DATASETS.items(), MODELS, PROMPT_VARIANTS, pairs))
-    print(f"{len(grid)} runs planned: {len(MODELS)} model(s) x {len(PROMPT_VARIANTS)} prompts x "
-          f"{len(pairs)} (temperature, seed) settings x {len(DATASETS)} dataset(s)\n")
+    grid = list(itertools.product(datasets.items(), models, PROMPT_VARIANTS, pairs))
+    print(f"{len(grid)} runs planned: {len(models)} model(s) x {len(PROMPT_VARIANTS)} prompts x "
+          f"{len(pairs)} (temperature, seed) settings x {len(datasets)} dataset(s)\n")
     for i, ((name, cfg), model, variant, (temperature, seed)) in enumerate(grid, 1):
         label = f"[{i}/{len(grid)}] {name} | {model} | {variant} | temp {temperature} | seed {seed}"
         if SKIP_DONE and already_done(name, cfg, model, variant, temperature, seed):

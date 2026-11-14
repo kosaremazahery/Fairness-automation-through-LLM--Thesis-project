@@ -72,10 +72,12 @@ ollama pull llama3.2:3b             # and llama3.1:8b for the second model
 **Data.** The COMPAS file is not in this repository, because it contains personal records (names,
 dates of birth, criminal histories). Download `compas-scores-two-years.csv` from
 [ProPublica's compas-analysis repository](https://github.com/propublica/compas-analysis), save it in
-this folder as `compas-scores-two-years_v1.csv`, then run:
+this folder as `compas-scores-two-years_v1.csv`. For Adult, save the UCI Adult data (train and test
+combined, 48,842 rows, with a header row; the common Kaggle/OpenML `adult.csv`) in this folder as
+`adult.csv`. Then run:
 
 ```bash
-python check_setup.py               # must end with "25/25 checks passed"
+python check_setup.py               # must end with "28/28 checks passed"
 ```
 
 ## Running
@@ -158,7 +160,9 @@ tools in a loop), and the `Dockerfile` (which runs `main.py`).
 | Measured proxy key (COMPAS) | done |
 | Literature proxy key (COMPAS) | draft |
 | Proxy step: llama3.2:3b and llama3.1:8b | done |
-| Adult dataset (both steps) | to do |
+| Adult gold set (step 1) | draft |
+| Step 1 on Adult, llama3.2:3b | running |
+| Adult proxy step | to do |
 | Larger models (e.g. through OpenRouter) | to decide with supervisors |
 | "Tainted features" as a second warning type | to decide with supervisors |
 
